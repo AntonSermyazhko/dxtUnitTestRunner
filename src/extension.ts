@@ -12,19 +12,31 @@ var qunitController: QUnitTestController = null;
 
 function registerRunQUnitTestsCommands (context:vscode.ExtensionContext){
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestsInChrome', () => {
-            console.log("qunitrunner.runTestsInChrome");
-            qunitController.runTests("chrome");
-        })
+        vscode.commands.registerCommand('qunitrunner.runTestsInChrome', () => qunitController.runTests("chrome"))
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand('qunitrunner.runTestsInFirefox', () => qunitController.runTests("firefox"))
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand('qunitrunner.runTestsInEdge', () => qunitController.runTests("edge"))
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand('qunitrunner.runTestsInIE', () => qunitController.runTests("ie"))
     );
 }
 
 function registerRunQUnitTestFileCommands (context:vscode.ExtensionContext) {
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestFileInChrome', args => {
-            console.log("qunitrunner.runTestFileInChrome", args);
-            qunitController.startTestRun("chrome", args.fsPath, new TestInfo('file', "", ""));
-        })
+        vscode.commands.registerCommand('qunitrunner.runTestFileInChrome', args => qunitController.startTestRun("chrome", args.fsPath, new TestInfo('file', "", "")))
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand('qunitrunner.runTestFileInFirefox', args => qunitController.startTestRun("firefox", args.fsPath, new TestInfo('file', "", "")))
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand('qunitrunner.runTestFileInEdge', args => qunitController.startTestRun("edge", args.fsPath, new TestInfo('file', "", "")))
+    );
+    context.subscriptions.push(
+        vscode.commands.registerCommand('qunitrunner.runTestFileInIE', args => qunitController.startTestRun("ie", args.fsPath, new TestInfo('file', "", "")))
     );
 }
 

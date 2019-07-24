@@ -45,6 +45,30 @@
             {
                 "command": "qunitrunner.runTestFileInChrome",
                 "title": "QUnit: Run Test(s) in Chrome"
+            },
+            {
+                "command": "qunitrunner.runTestsInFirefox",
+                "title": "QUnit: Run Test(s) in Firefox"
+            },
+            {
+                "command": "qunitrunner.runTestFileInFirefox",
+                "title": "QUnit: Run Test(s) in Firefox"
+            },
+            {
+                "command": "qunitrunner.runTestsInEdge",
+                "title": "QUnit: Run Test(s) in Edge"
+            },
+            {
+                "command": "qunitrunner.runTestFileInEdge",
+                "title": "QUnit: Run Test(s) in Edge"
+            },
+            {
+                "command": "qunitrunner.runTestsInIE",
+                "title": "QUnit: Run Test(s) in IE"
+            },
+            {
+                "command": "qunitrunner.runTestFileInIE",
+                "title": "QUnit: Run Test(s) in IE"
             }
         ],
         "menus": {
@@ -53,12 +77,42 @@
                     "when": "editorLangId == javascript && qunitrunner.readyForUX && qunitrunner.chromeInstalled",
                     "command": "qunitrunner.runTestsInChrome",
                     "group": "qunitrunner"
+                },
+                {
+                    "when": "editorLangId == javascript && qunitrunner.readyForUX && qunitrunner.firefoxInstalled",
+                    "command": "qunitrunner.runTestsInFirefox",
+                    "group": "qunitrunner"
+                },
+                {
+                    "when": "editorLangId == javascript && qunitrunner.readyForUX && qunitrunner.edgeInstalled",
+                    "command": "qunitrunner.runTestsInEdge",
+                    "group": "qunitrunner"
+                },
+                {
+                    "when": "editorLangId == javascript && qunitrunner.readyForUX && qunitrunner.ieInstalled",
+                    "command": "qunitrunner.runTestsInIE",
+                    "group": "qunitrunner"
                 }
             ],
             "explorer/context": [
                 {
                     "when": "resourceLangId == javascript && qunitrunner.readyForUX && qunitrunner.chromeInstalled",
                     "command": "qunitrunner.runTestFileInChrome",
+                    "group": "qunitrunner"
+                },
+                {
+                    "when": "resourceLangId == javascript && qunitrunner.readyForUX && qunitrunner.firefoxInstalled",
+                    "command": "qunitrunner.runTestFileInFirefox",
+                    "group": "qunitrunner"
+                },
+                {
+                    "when": "resourceLangId == javascript && qunitrunner.readyForUX && qunitrunner.edgeInstalled",
+                    "command": "qunitrunner.runTestFileInEdge",
+                    "group": "qunitrunner"
+                },
+                {
+                    "when": "resourceLangId == javascript && qunitrunner.readyForUX && qunitrunner.ieInstalled",
+                    "command": "qunitrunner.runTestFileInIE",
                     "group": "qunitrunner"
                 }
             ]
