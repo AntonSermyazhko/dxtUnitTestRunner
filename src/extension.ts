@@ -233,8 +233,8 @@ class QUnitTestController {
         if(relativeFilePathMatch) {
             var testId = this.generateQunitTestHash(moduleName, testName),
                 relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/'),
-                testUri = encodeURI(`http://localhost:${qunitPort}/run/${relativeFilePath}?testId=${testId}`);
-
+                testUri = encodeURI(`http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true&testId=${testId}`);
+            testUri = testUri.replace(/&/g, '^&');
             browserTools.getBrowserInfo(browser).then((info: any) => browserTools.open(info, testUri));
         }
     }
