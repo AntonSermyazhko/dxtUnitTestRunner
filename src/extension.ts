@@ -127,14 +127,14 @@ class QUnitTestController {
                         if(this.runQUnitTestService()) {
                             isReachable(qunitUrl, { timeout: 30000 }).then(result => {
                                 if(result) {
-                                    setTimeout(() => this.runTest(browser, qunitPort, filePath, testInfo.module, testInfo.name), 2000);
+                                    setTimeout(() => this.runTest(browser, qunitPort, filePath, testInfo), 2000);
                                 } else {
                                     vscode.window.showErrorMessage(`Test runner: Error start testing service`);
                                 }
                             });
                         }
                     } else {
-                        this.runTest(browser, qunitPort, filePath, testInfo.module, testInfo.name);
+                        this.runTest(browser, qunitPort, filePath, testInfo);
                     }
                 }
             });
@@ -171,7 +171,7 @@ class QUnitTestController {
     }
 
     private findTest(textBeforeSelection: string, textLine: string, cursorPosition: number): TestInfo {
-        const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.(test|testInActiveWindow)\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*(.+?\s*('|"))\s*,/gm;
+        const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.(test|testInActiveWindow)\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*('|")(.+?\s*\3)\s*,/gm;
         const CLEANUP_TEST_OR_FIXTURE_NAME_RE = /(^\(?\s*(\'|"|`))|((\'|"|`)\s*\)?$)/g;
 
         var testMatch = QUNIT_TEST_RE.exec(textLine),
@@ -180,13 +180,13 @@ class QUnitTestController {
             lastOneTest = null;
 
         if(testMatch) {
-            let testName = testMatch[3].replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '');
+            let testName = testMatch[4].replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '');
             return new TestInfo('test', moduleName, testName);
         } else {
             testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
             while(testMatch !== null) {
                 if(this.isTest(testMatch[0])) {
-                    let name = testMatch[3],
+                    let name = testMatch[4],
                         realIndex = testMatch.index + testMatch[0].length - this.cropMatchString(testMatch[0]).length;
                     matches.push({
                         type: 'test',
@@ -199,13 +199,15 @@ class QUnitTestController {
                 testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
             }
 
-            if(matches.length){
+            if(matches.length) {
                 for(var i = matches.length - 1; i >= 0; i--){
                     if(cursorPosition >=  matches[i].index){
                         lastOneTest = matches[i];
                         break;
                     }
                 }
+            } else {
+                return new TestInfo('module', moduleName, "");
             }
 
             if(lastOneTest) {
@@ -228,14 +230,19 @@ class QUnitTestController {
         return matchString.trim();
     }
 
-    private runTest(browser: string, qunitPort: number, filePath: string, moduleName: string, testName: string) {
+    private runTest(browser: string, qunitPort: number, filePath: string, testInfo: TestInfo) {
         var relativeFilePathMatch = /(?:testing\\tests\\)(.*)/.exec(filePath);
         if(relativeFilePathMatch) {
-            var testId = this.generateQunitTestHash(moduleName, testName),
-                relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/'),
-                testUri = encodeURI(`http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true&testId=${testId}`);
-            testUri = testUri.replace(/&/g, '^&');
-            browserTools.getBrowserInfo(browser).then((info: any) => browserTools.open(info, testUri));
+            var relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/'),
+                testUrl = `http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true`;
+            if(testInfo.type === "module") {
+                testUrl = encodeURI(`${testUrl}&module=${testInfo.module}`);
+            } else {
+                let testId = this.generateQunitTestHash(testInfo.module, testInfo.name);
+                testUrl = encodeURI(`${testUrl}&testId=${testId}`);
+            }
+            testUrl = testUrl.replace(/&/g, '^&');
+            browserTools.getBrowserInfo(browser).then((info: any) => browserTools.open(info, testUrl));
         }
     }
 
