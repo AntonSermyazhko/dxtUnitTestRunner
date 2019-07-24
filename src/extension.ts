@@ -171,7 +171,7 @@ class QUnitTestController {
     }
 
     private findTest(textBeforeSelection: string, textLine: string, cursorPosition: number): TestInfo {
-        const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.test\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*(.+?\s*('|"))\s*,/gm;
+        const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.(test|testInActiveWindow)\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*(.+?\s*('|"))\s*,/gm;
         const CLEANUP_TEST_OR_FIXTURE_NAME_RE = /(^\(?\s*(\'|"|`))|((\'|"|`)\s*\)?$)/g;
 
         var testMatch = QUNIT_TEST_RE.exec(textLine),
@@ -180,13 +180,13 @@ class QUnitTestController {
             lastOneTest = null;
 
         if(testMatch) {
-            let testName = testMatch[2].replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '');
+            let testName = testMatch[3].replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '');
             return new TestInfo('test', moduleName, testName);
         } else {
             testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
             while(testMatch !== null) {
                 if(this.isTest(testMatch[0])) {
-                    let name = testMatch[2],
+                    let name = testMatch[3],
                         realIndex = testMatch.index + testMatch[0].length - this.cropMatchString(testMatch[0]).length;
                     matches.push({
                         type: 'test',
@@ -219,7 +219,7 @@ class QUnitTestController {
     private isTest(matchString) {
         var validPrefixes = ['QUnit.test', 'QUnit.testInActiveWindow'],
             cropedString = this.cropMatchString(matchString);
-        return !!validPrefixes.find(item => cropedString.indexOf(item));
+        return !!validPrefixes.find(item => cropedString.indexOf(item) >= 0);
     }
 
     private cropMatchString(matchString){
