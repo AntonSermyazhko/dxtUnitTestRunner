@@ -114,7 +114,13 @@ class QUnitTestController {
                 return;
             }
 
-            console.log(`Running test: module=${testInfo.module}, test=${testInfo.name}`);
+            if(testInfo.type === "test") {
+                console.log(`Running test: module=${testInfo.module}, test=${testInfo.name}`);
+            } else if(testInfo.type === "module") {
+                console.log(`Running tests: module=${testInfo.module}`);
+            } else if(testInfo.type === "file") {
+                console.log(`Running tests: file=${filePath}`);
+            }
 
             var ports = JSON.parse(data),
                 qunitPort = ports.qunit,
@@ -153,12 +159,14 @@ class QUnitTestController {
         return false;
     }
 
-    private findModule(textBeforeSelection: string): string {
+    private findModule(textBeforeSelection: string) {
         const QUNIT_MODULE_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.module\s*\(\s*('|")(.+?\s*)('|")\s*/gm;
         var moduleMatch = QUNIT_MODULE_RE.exec(textBeforeSelection),
+            index = -1,
             moduleName = "";
 
         while(moduleMatch !== null) {
+            index = moduleMatch.index;
             moduleName = moduleMatch.length > 4 ? moduleMatch[3] : moduleMatch[2];
             moduleMatch = QUNIT_MODULE_RE.exec(textBeforeSelection);
         }
@@ -167,30 +175,30 @@ class QUnitTestController {
             vscode.window.showWarningMessage(`Test runner: Test module not found`);
         }
 
-        return moduleName;
+        return { name: moduleName, index: index };
     }
 
     private findTest(textBeforeSelection: string, textLine: string, cursorPosition: number): TestInfo {
-        const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.(test|testInActiveWindow)\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*('|")(.+?\s*\3)\s*,/gm;
+        const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*|QUnit\.)(test\w*)\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*('|")(.+?\s*\3)\s*,/gm;
         const CLEANUP_TEST_OR_FIXTURE_NAME_RE = /(^\(?\s*(\'|"|`))|((\'|"|`)\s*\)?$)/g;
 
         var testMatch = QUNIT_TEST_RE.exec(textLine),
             matches = [],
-            moduleName = this.findModule(textBeforeSelection),
+            moduleInfo = this.findModule(textBeforeSelection),
             lastOneTest = null;
 
         if(testMatch) {
             let testName = testMatch[4].replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '');
-            return new TestInfo('test', moduleName, testName);
+            return new TestInfo('test', moduleInfo.name, testName);
         } else {
             testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
             while(testMatch !== null) {
-                if(this.isTest(testMatch[0])) {
+                if(this.isTest(testMatch[0]) && testMatch.index > moduleInfo.index) {
                     let name = testMatch[4],
                         realIndex = testMatch.index + testMatch[0].length - this.cropMatchString(testMatch[0]).length;
                     matches.push({
                         type: 'test',
-                        module: moduleName,
+                        module: moduleInfo.name,
                         name: name.replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, ''),
                         index: realIndex
                     });
@@ -207,7 +215,7 @@ class QUnitTestController {
                     }
                 }
             } else {
-                return new TestInfo('module', moduleName, "");
+                return new TestInfo('module', moduleInfo.name, "");
             }
 
             if(lastOneTest) {
@@ -219,7 +227,7 @@ class QUnitTestController {
     }
 
     private isTest(matchString) {
-        var validPrefixes = ['QUnit.test', 'QUnit.testInActiveWindow'],
+        var validPrefixes = ['test', 'testInActiveWindow', 'testInDesktop'],
             cropedString = this.cropMatchString(matchString);
         return !!validPrefixes.find(item => cropedString.indexOf(item) >= 0);
     }
@@ -237,7 +245,7 @@ class QUnitTestController {
                 testUrl = `http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true`;
             if(testInfo.type === "module") {
                 testUrl = encodeURI(`${testUrl}&module=${testInfo.module}`);
-            } else {
+            } else if(testInfo.type === "test") {
                 let testId = this.generateQunitTestHash(testInfo.module, testInfo.name);
                 testUrl = encodeURI(`${testUrl}&testId=${testId}`);
             }
