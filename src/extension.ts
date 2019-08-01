@@ -124,29 +124,35 @@ class QUnitTestController {
 
             var ports = JSON.parse(data),
                 qunitPort = ports.qunit,
-                qunitUrl: string = `http://localhost:${qunitPort}`;
+                qunitUrl: string = `http://localhost:${qunitPort}`,
+                relativeFilePathMatch = /(?:testing\\tests\\)(.*)/.exec(filePath);
 
-            isReachable(qunitUrl, { timeout: 400 }).then(result => {
-                var relativeFilePathMatch = /(?:testing\\tests\\)(.*)/.exec(filePath);
-                if(relativeFilePathMatch) {
-                    if(!result) {
-                        if(this.runQUnitTestService()) {
-                            isReachable(qunitUrl, { timeout: 30000 }).then(result => {
-                                if(result) {
-                                    setTimeout(() => this.runTest(browser, qunitPort, filePath, testInfo), 2000);
-                                } else {
-                                    vscode.window.showErrorMessage(`Test runner: Error start testing service`);
-                                }
-                            });
-                        }
-                    } else {
-                        this.runTest(browser, qunitPort, filePath, testInfo);
-                    }
+            if(!relativeFilePathMatch) {
+                vscode.window.showErrorMessage(`Test runner: Wrong relative test file path`);
+                return;
+            }
+
+            isReachable(qunitUrl, { timeout: 1000 }).then(result => {
+                if(!result) {
+                    this.restartQUnitTestService(qunitUrl, browser, qunitPort, filePath, testInfo);
+                } else {
+                    this.runTest(browser, qunitPort, filePath, testInfo);
                 }
             });
         });
     }
 
+    private restartQUnitTestService(qunitUrl: string, browser: string, qunitPort: number, filePath: string, testInfo: TestInfo) {
+        if(this.runQUnitTestService()) {
+            isReachable(qunitUrl, { timeout: 60000 }).then(result => {
+                if(result) {
+                    setTimeout(() => this.runTest(browser, qunitPort, filePath, testInfo), 2000);
+                } else {
+                    vscode.window.showErrorMessage(`Test runner: Error start testing service`);
+                }
+            });
+        }
+    }
     private runQUnitTestService(): boolean {
         var terminal = vscode.window.createTerminal("qunit test runner");
         if(terminal) {
