@@ -2,7 +2,7 @@
     "name": "dxt-qunit-test-runner",
     "displayName": "DevExtreme QUnit Test Runner",
     "description": "Allows running DevExtreme QUnit tests directly from VS Code via context menu",
-    "version": "1.0.3",
+    "version": "1.0.4",
     "publisher": "AntonSermyazhko",
     "icon": "images/dxqunit.png",
     "engines": {
