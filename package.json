@@ -115,6 +115,28 @@
                     "command": "qunitrunner.runTestFileInIE",
                     "group": "qunitrunner"
                 }
+            ],
+            "editor/title/context": [
+                {
+                    "when": "resourceLangId == javascript && qunitrunner.readyForUX && qunitrunner.chromeInstalled",
+                    "command": "qunitrunner.runTestFileInChrome",
+                    "group": "qunitrunner"
+                },
+                {
+                    "when": "resourceLangId == javascript && qunitrunner.readyForUX && qunitrunner.firefoxInstalled",
+                    "command": "qunitrunner.runTestFileInFirefox",
+                    "group": "qunitrunner"
+                },
+                {
+                    "when": "resourceLangId == javascript && qunitrunner.readyForUX && qunitrunner.edgeInstalled",
+                    "command": "qunitrunner.runTestFileInEdge",
+                    "group": "qunitrunner"
+                },
+                {
+                    "when": "resourceLangId == javascript && qunitrunner.readyForUX && qunitrunner.ieInstalled",
+                    "command": "qunitrunner.runTestFileInIE",
+                    "group": "qunitrunner"
+                }
             ]
         }
     },
