@@ -19,8 +19,7 @@
         "Runner"
     ],
     "activationEvents": [
-        "onLanguage:javascript",
-        "onLanguage:typescript"
+        "onLanguage:javascript"
     ],
     "main": "./out/src/extension",
     "contributes": {
