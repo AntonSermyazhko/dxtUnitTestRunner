@@ -95,13 +95,46 @@ class QUnitTestController {
         }
     }
 
+    normalizeFilePath(filePath: string): string {
+        const partsMatch = /.+?(\\\w+Parts\\.*)/.exec(filePath);
+        if(!partsMatch || !partsMatch.length) {
+            return filePath;
+        }
+
+        const partsWithFileName = partsMatch[1].replace(/\\/g, '/'),
+            testsPathMatch = /.+?(?=\\\w+Parts\\)/.exec(filePath);
+        if(testsPathMatch && testsPathMatch.length) {
+            const testsPath = testsPathMatch[0],
+                fileNames = fs.readdirSync(testsPath).filter(item => {
+                    const lowerCaseItem = item.toLowerCase();
+                    return lowerCaseItem.endsWith(".js") || lowerCaseItem.endsWith(".ts");
+                });
+
+            for(let i = 0; i < fileNames.length; ++i) {
+                const fileName = fileNames[i],
+                    testFilePath = `${testsPath}/${fileName}`,
+                    fileContent = fs.readFileSync(testFilePath, "utf8");
+
+                if(fileContent.indexOf(partsWithFileName) >= 0) {
+                    return testFilePath;
+                }
+            }
+        }
+    }
+
     public startTestRun(browser: string, filePath: string, testInfo: TestInfo) {
         if(!type) {
             vscode.window.showErrorMessage(`No tests found. Position the cursor on the test caption.`);
             return;
         }
 
-        var rootPathMatch = /.+?(?=testing)/.exec(filePath);
+        filePath = this.normalizeFilePath(filePath);
+        if(!filePath) {
+            vscode.window.showErrorMessage(`Test runner: Error parse test file path`);
+            return;
+        }
+
+        const rootPathMatch = /.+?(?=testing)/.exec(filePath);
         if(!rootPathMatch) {
             vscode.window.showErrorMessage(`Test runner: Error parse test file root path`);
             return;
