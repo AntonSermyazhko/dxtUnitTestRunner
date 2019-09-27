@@ -165,7 +165,7 @@ class QUnitTestController {
                 return;
             }
 
-            isReachable(qunitUrl, { timeout: 1000 }).then(result => {
+            isReachable(qunitUrl, { timeout: 3000 }).then(result => {
                 if(!result) {
                     this.restartQUnitTestService(qunitUrl, browser, qunitPort, filePath, testInfo);
                 } else {
