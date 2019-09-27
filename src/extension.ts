@@ -1,5 +1,5 @@
-'use strict';
 
+'use strict';
 import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as browserTools from 'testcafe-browser-tools';
@@ -123,7 +123,7 @@ class QUnitTestController {
     }
 
     public startTestRun(browser: string, filePath: string, testInfo: TestInfo) {
-        if(!type) {
+        if(!testInfo.type) {
             vscode.window.showErrorMessage(`No tests found. Position the cursor on the test caption.`);
             return;
         }
@@ -199,7 +199,7 @@ class QUnitTestController {
     }
 
     private findModule(textBeforeSelection: string) {
-        const QUNIT_MODULE_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.module\s*\(\s*('|")(.+?\s*)('|")\s*/gm;
+        const QUNIT_MODULE_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.module\s*\(\s*('|")(.+?\s*)('|")\s*(,|\n)/gm;
         var moduleMatch = QUNIT_MODULE_RE.exec(textBeforeSelection),
             index = -1,
             moduleName = "";
