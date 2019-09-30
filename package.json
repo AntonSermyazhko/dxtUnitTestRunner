@@ -2,7 +2,7 @@
     "name": "dxt-qunit-test-runner",
     "displayName": "DevExtreme QUnit Test Runner",
     "description": "Allows running DevExtreme QUnit tests directly from VS Code via context menu",
-    "version": "1.0.5",
+    "version": "1.0.6",
     "publisher": "AntonSermyazhko",
     "icon": "images/dxqunit.png",
     "engines": {
@@ -21,7 +21,7 @@
     "activationEvents": [
         "onLanguage:javascript"
     ],
-    "main": "./out/src/extension",
+    "main": "./dist/extension",
     "contributes": {
         "configuration": {
             "title": "DevExtreme QUnit Test Runner configuration",
@@ -141,7 +141,9 @@
         }
     },
     "scripts": {
-        "vscode:prepublish": "tsc -p ./",
+        "vscode:prepublish": "webpack --mode production",
+        "webpack": "webpack --mode development",
+        "webpack-dev": "webpack --mode development --watch",
         "compile": "tsc -watch -p ./",
         "postinstall": "node ./node_modules/vscode/bin/install",
         "test": "node ./node_modules/vscode/bin/test",
@@ -153,8 +155,11 @@
     },
     "devDependencies": {
         "@types/node": "^12.6.8",
+        "ts-loader": "^6.1.2",
         "typescript": "^3.5.3",
-        "vscode": "^1.1.35"
+        "vscode": "^1.1.35",
+        "webpack": "^4.41.0",
+        "webpack-cli": "^3.3.9"
     },
     "repository": {
         "type": "git",
