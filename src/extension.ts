@@ -199,7 +199,7 @@ class QUnitTestController {
     }
 
     private findModule(textBeforeSelection: string) {
-        const QUNIT_MODULE_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.module\s*\(\s*('|")(.+?\s*)('|")\s*(,|\n)/gm;
+        const QUNIT_MODULE_RE = /(^|;|\s+|\/\/|\/\*)QUnit\.module\s*\(\s*('|")(.+?\s*)('|")\s*(,|\)|\n)/gm;
         var moduleMatch = QUNIT_MODULE_RE.exec(textBeforeSelection),
             index = -1,
             moduleName = "";

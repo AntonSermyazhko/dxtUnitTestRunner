@@ -4,3 +4,6 @@
 
 # 1.0.4 (2019-08-28)
 1. Support runnig test file using "editor/title/context" context menu
+
+# 1.0.6 (2019-10-02)
+1. Fix finding module in different cases
