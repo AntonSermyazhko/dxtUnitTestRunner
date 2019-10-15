@@ -7,3 +7,6 @@
 
 # 1.0.6 (2019-10-02)
 1. Fix finding module in different cases
+
+# 1.0.7 (2019-10-15)
+1. Change extension icon
