@@ -4,39 +4,37 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as browserTools from 'testcafe-browser-tools';
 import * as isReachable from 'is-reachable';
-import { type } from 'os';
-
-const BROWSER_ALIASES = ['ie', 'firefox', 'chrome', 'chrome-canary', 'chromium', 'opera', 'safari', 'edge'];
+import { BrowserInfo, TestInfo, TestInfoFile, BROWSER_ALIASES, BrowserInfos } from './infos';
 
 var qunitController: QUnitTestController = null;
 
 function registerRunQUnitTestsCommands (context:vscode.ExtensionContext){
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestsInChrome', () => qunitController.runTests("chrome"))
+        vscode.commands.registerCommand('qunitrunner.runTestsInChrome', () => qunitController.runTests(BrowserInfos.chrome))
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestsInFirefox', () => qunitController.runTests("firefox"))
+        vscode.commands.registerCommand('qunitrunner.runTestsInFirefox', () => qunitController.runTests(BrowserInfos.fireFox))
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestsInEdge', () => qunitController.runTests("edge"))
+        vscode.commands.registerCommand('qunitrunner.runTestsInEdge', () => qunitController.runTests(BrowserInfos.edge))
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestsInIE', () => qunitController.runTests("ie"))
+        vscode.commands.registerCommand('qunitrunner.runTestsInIE', () => qunitController.runTests(BrowserInfos.ie))
     );
 }
 
 function registerRunQUnitTestFileCommands (context:vscode.ExtensionContext) {
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestFileInChrome', args => qunitController.startTestRun("chrome", args.fsPath, new TestInfo('file', "", "")))
+        vscode.commands.registerCommand('qunitrunner.runTestFileInChrome', args => qunitController.startTestRun(BrowserInfos.chrome, args.fsPath, TestInfoFile))
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestFileInFirefox', args => qunitController.startTestRun("firefox", args.fsPath, new TestInfo('file', "", "")))
+        vscode.commands.registerCommand('qunitrunner.runTestFileInFirefox', args => qunitController.startTestRun(BrowserInfos.fireFox, args.fsPath, TestInfoFile))
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestFileInEdge', args => qunitController.startTestRun("edge", args.fsPath, new TestInfo('file', "", "")))
+        vscode.commands.registerCommand('qunitrunner.runTestFileInEdge', args => qunitController.startTestRun(BrowserInfos.edge, args.fsPath, TestInfoFile))
     );
     context.subscriptions.push(
-        vscode.commands.registerCommand('qunitrunner.runTestFileInIE', args => qunitController.startTestRun("ie", args.fsPath, new TestInfo('file', "", "")))
+        vscode.commands.registerCommand('qunitrunner.runTestFileInIE', args => qunitController.startTestRun(BrowserInfos.ie, args.fsPath, TestInfoFile))
     );
 }
 
@@ -76,7 +74,7 @@ export function deactivate() {
 }
 
 class QUnitTestController {
-    public runTests(browser:string) {
+    public runTests(browserInfo: BrowserInfo) {
         var editor = vscode.window.activeTextEditor,
             document = editor && editor.document
         if(!editor || !document) {
@@ -90,7 +88,7 @@ class QUnitTestController {
                     textBeforeSelection = document.getText(new vscode.Range(0, 0, selection.end.line + 1, 0)),
                     testInfo = this.findTest(textBeforeSelection, textLine, cursorPosition);
 
-                this.startTestRun(browser, document.fileName, testInfo);
+                this.startTestRun(browserInfo, document.fileName, testInfo);
             }
         }
     }
@@ -122,7 +120,7 @@ class QUnitTestController {
         }
     }
 
-    public startTestRun(browser: string, filePath: string, testInfo: TestInfo) {
+    public startTestRun(browserInfo: BrowserInfo, filePath: string, testInfo: TestInfo) {
         if(!testInfo.type) {
             vscode.window.showErrorMessage(`No tests found. Position the cursor on the test caption.`);
             return;
@@ -167,22 +165,21 @@ class QUnitTestController {
 
             isReachable(qunitUrl, { timeout: 3000 }).then(result => {
                 if(!result) {
-                    this.restartQUnitTestService(qunitUrl, browser, qunitPort, filePath, testInfo);
+                    this.restartQUnitTestService(qunitUrl, browserInfo, qunitPort, filePath, testInfo);
                 } else {
-                    this.runTest(browser, qunitPort, filePath, testInfo);
+                    this.runTest(browserInfo, qunitPort, filePath, testInfo);
                 }
             });
         });
     }
 
-    private restartQUnitTestService(qunitUrl: string, browser: string, qunitPort: number, filePath: string, testInfo: TestInfo) {
+    private restartQUnitTestService(qunitUrl: string, browserInfo: BrowserInfo, qunitPort: number, filePath: string, testInfo: TestInfo) {
         if(this.runQUnitTestService()) {
-            isReachable(qunitUrl, { timeout: 60000 }).then(result => {
-                if(result) {
-                    setTimeout(() => this.runTest(browser, qunitPort, filePath, testInfo), 2000);
-                } else {
-                    vscode.window.showErrorMessage(`Test runner: Error start testing service`);
+            isReachable(qunitUrl, { timeout: 40000 }).then(result => {
+                if(!result) {
+                    vscode.window.showWarningMessage(`Test runner: Error start testing service`);
                 }
+                setTimeout(() => this.runTest(browserInfo, qunitPort, filePath, testInfo), 1000);
             });
         }
     }
@@ -277,7 +274,7 @@ class QUnitTestController {
         return matchString.trim();
     }
 
-    private runTest(browser: string, qunitPort: number, filePath: string, testInfo: TestInfo) {
+    private runTest(browserInfo: BrowserInfo, qunitPort: number, filePath: string, testInfo: TestInfo) {
         var relativeFilePathMatch = /(?:testing\\tests\\)(.*)/.exec(filePath);
         if(relativeFilePathMatch) {
             var relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/'),
@@ -289,7 +286,12 @@ class QUnitTestController {
                 testUrl = encodeURI(`${testUrl}&testId=${testId}`);
             }
             testUrl = testUrl.replace(/&/g, '^&');
-            browserTools.getBrowserInfo(browser).then((info: any) => browserTools.open(info, testUrl));
+            browserTools.getBrowserInfo(browserInfo.name).then((info: any) => {
+                if(browserInfo.cmdArgs) {
+                    info.cmd += ` ${browserInfo.cmdArgs}`;
+                }
+                browserTools.open(info, testUrl);
+            });
         }
     }
 
@@ -311,17 +313,5 @@ class QUnitTestController {
     }
 
     dispose() {
-    }
-}
-
-class TestInfo {
-    type: string;
-    module: string;
-    name: string;
-
-    constructor(type: string, module: string, name: string) {
-        this.type = type;
-        this.module = module;
-        this.name = name;
     }
 }
