@@ -5,6 +5,7 @@ import * as fs from 'fs';
 import * as browserTools from 'testcafe-browser-tools';
 import * as isReachable from 'is-reachable';
 import { BrowserInfo, TestInfo, TestInfoFile, BROWSER_ALIASES, BrowserInfos } from './infos';
+import { Terminal } from 'vscode';
 
 var qunitController: QUnitTestController = null;
 
@@ -183,16 +184,33 @@ class QUnitTestController {
             });
         }
     }
-    private runQUnitTestService(): boolean {
-        var terminal = vscode.window.createTerminal("qunit test runner");
-        if(terminal) {
-            terminal.show(true);
+    private runQUnitTestService(): Thenable<boolean> {
+        let terminal: Terminal;
+        const runQUnit = (terminal: Terminal, showTerminal: boolean) => {
+            if(!terminal) {
+                vscode.window.showErrorMessage(`Test runner: Error run QUnit test service`);
+                return false;
+            }
+            if(showTerminal) {
+                terminal.show();
+            }
             terminal.sendText("cd ./testing");
             terminal.sendText("node launch");
             return true;
-        }
-        vscode.window.showErrorMessage(`Test runner: Error run QUnit test service`);
-        return false;
+        };
+
+        return vscode.commands
+            .executeCommand("workbench.action.terminal.split")
+            .then<boolean>(() => {
+                const terminals = (vscode.window as any).terminals as ReadonlyArray<Terminal>;
+                if(terminals && terminals.length > 0) {
+                    terminal = terminals[terminals.length - 1];
+                    return runQUnit(terminal, false);
+                } else {
+                    terminal = vscode.window.createTerminal("qunit test runner");
+                    return runQUnit(terminal, true);
+                }
+            });
     }
 
     private findModule(textBeforeSelection: string) {
