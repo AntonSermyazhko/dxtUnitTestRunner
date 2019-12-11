@@ -10,3 +10,8 @@
 
 # 1.0.7 (2019-10-15)
 1. Change extension icon
+
+# 1.0.8 (2019-12-11)
+1. Support simple QUnit 'test' and 'module' syntax:
+    module('moduleName' ...)
+        test('testName', ...)
