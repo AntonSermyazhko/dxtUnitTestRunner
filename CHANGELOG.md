@@ -15,3 +15,6 @@
 1. Support simple QUnit 'test' and 'module' syntax:
     module('moduleName' ...)
         test('testName', ...)
+
+# 1.1.0 (2019-12-11)
+1. Refactoring
