@@ -82,12 +82,6 @@ class TestRunner {
         }
 
         const qunitUrl = `http://localhost:${qunitPort}`;
-        const relativeFilePathMatch = /(?:testing\\tests\\)(.*)/.exec(filePath);
-
-        if(!relativeFilePathMatch) {
-            vscode.window.showErrorMessage(`Test runner: Wrong relative test file path`);
-            return;
-        }
 
         isReachable(qunitUrl, { timeout: 5000 }).then(result => {
             if(!result) {
@@ -99,7 +93,8 @@ class TestRunner {
     }
 
     private runTestCore(browserInfo: BrowserInfo, qunitPort: number, filePath: string, testInfo: TestInfo) {
-        var relativeFilePathMatch = /(?:testing\\tests\\)(.*)/.exec(filePath);
+        const relativeFilePathMatch = /(?:testing(?:\\|\/)tests(?:\\|\/))(.*)/.exec(filePath);
+
         if(relativeFilePathMatch) {
             var relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/'),
                 testUrl = `http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true`;
@@ -116,6 +111,9 @@ class TestRunner {
                 }
                 browserTools.open(info, testUrl);
             });
+        } else {
+            vscode.window.showErrorMessage(`Test runner: Wrong relative test file path`);
+            return;
         }
     }
 
