@@ -104,12 +104,11 @@ class TestRunner {
                 let testId = QUnitHelper.generateQunitTestHash(testInfo.module, testInfo.name);
                 testUrl = encodeURI(`${testUrl}&testId=${testId}`);
             }
-            testUrl = testUrl.replace(/&/g, '^&');
             browserTools.getBrowserInfo(browserInfo.name).then((info: any) => {
                 if(browserInfo.cmdArgs) {
                     info.cmd += ` ${browserInfo.cmdArgs}`;
                 }
-                browserTools.open(info, testUrl);
+                browserTools.open(info, `'${testUrl}'`);
             });
         } else {
             vscode.window.showErrorMessage(`Test runner: Wrong relative test file path`);
