@@ -18,3 +18,8 @@
 
 # 1.1.0 (2019-12-11)
 1. Refactoring
+
+# 1.2.1 (2019-12-19)
+1. Support MacOS
+2. Running tests from "[...].forEach" construction
+3. Fix some bugs in regular expressions
