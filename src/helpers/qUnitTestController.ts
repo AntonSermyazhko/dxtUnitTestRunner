@@ -82,7 +82,6 @@ class TestRunner {
         }
 
         const qunitUrl = `http://localhost:${qunitPort}`;
-
         isReachable(qunitUrl, { timeout: 5000 }).then(result => {
             if(!result) {
                 this.restartQUnitTestService(qunitUrl, browserInfo, qunitPort, filePath, testInfo);
@@ -94,35 +93,47 @@ class TestRunner {
 
     private runTestCore(browserInfo: BrowserInfo, qunitPort: number, filePath: string, testInfo: TestInfo) {
         const relativeFilePathMatch = /(?:testing(?:\\|\/)tests(?:\\|\/))(.*)/.exec(filePath);
-
+        const isWin32 = process.platform === "win32";
         if(relativeFilePathMatch) {
-            var relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/'),
-                testUrl = `http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true`;
+            const relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/');
+            let testUrl = `http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true`;
             if(testInfo.type === "module") {
                 testUrl = encodeURI(`${testUrl}&module=${testInfo.module}`);
             } else if(testInfo.type === "test") {
-                let testId = QUnitHelper.generateQunitTestHash(testInfo.module, testInfo.name);
-                testUrl = encodeURI(`${testUrl}&testId=${testId}`);
+                if(testInfo.hasInterpolation) {
+                    testUrl = encodeURI(`${testUrl}&module=${testInfo.module}&filter=${testInfo.name}`);
+                } else {
+                    let testId = QUnitHelper.generateQunitTestHash(testInfo.module, testInfo.name);
+                    testUrl = encodeURI(`${testUrl}&testId=${testId}`);
+                }
             }
+
+            if(isWin32) {
+                testUrl = testUrl.replace(/&/g, '^&');
+            } else {
+                testUrl = `'${testUrl}'`;
+            }
+
             browserTools.getBrowserInfo(browserInfo.name).then((info: any) => {
                 if(browserInfo.cmdArgs) {
                     info.cmd += ` ${browserInfo.cmdArgs}`;
                 }
-                browserTools.open(info, `'${testUrl}'`);
+                browserTools.open(info, testUrl);
             });
         } else {
-            vscode.window.showErrorMessage(`Test runner: Wrong relative test file path`);
-            return;
+            vscode.window.showErrorMessage('Test runner: Wrong relative test file path');
         }
     }
 
     private restartQUnitTestService(qunitUrl: string, browserInfo: BrowserInfo, qunitPort: number, filePath: string, testInfo: TestInfo) {
         if(this.runQUnitTestService()) {
-            isReachable(qunitUrl, { timeout: 40000 }).then(result => {
+            isReachable(qunitUrl, { timeout: 20000 }).then(result => {
                 if(!result) {
-                    vscode.window.showWarningMessage(`Test runner: Error start testing service`);
+                    vscode.window.showWarningMessage('Test runner: Error start testing service');
                 }
-                setTimeout(() => this.runTestCore(browserInfo, qunitPort, filePath, testInfo), 1000);
+                setTimeout(
+                    () => this.runTestCore(browserInfo, qunitPort, filePath, testInfo),
+                    3000);
             });
         }
     }
@@ -142,8 +153,7 @@ class TestRunner {
 
 class TestParser {
     findTest(textBeforeSelection: string, textLine: string, cursorPosition: number): TestInfo {
-        const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*|QUnit\.)(test\w*)\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*('|")(.+?\s*\3)\s*,/gm;
-        const CLEANUP_TEST_OR_FIXTURE_NAME_RE = /(^\(?\s*(\'|"|`))|((\'|"|`)\s*\)?$)/g;
+        const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*|QUnit\.)(test\w*)\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*('|"|`)(.+?\s*(?:[^\\]\3))\s*,/gm;
 
         var testMatch = QUNIT_TEST_RE.exec(textLine),
             matches = [],
@@ -151,18 +161,17 @@ class TestParser {
             lastOneTest = null;
 
         if(testMatch) {
-            let testName = testMatch[4].replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '');
-            return new TestInfo('test', moduleInfo.name, testName);
+            return this.prepareTestInfo(testMatch[4], moduleInfo.name);
         } else {
             testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
             while(testMatch !== null) {
                 if(this.isTest(testMatch[0]) && testMatch.index > moduleInfo.index) {
-                    let name = testMatch[4],
-                        realIndex = testMatch.index + testMatch[0].length - this.cropMatchString(testMatch[0]).length;
+                    const testInfo = this.prepareTestInfo(testMatch[4], moduleInfo.name);
+                    const realIndex = testMatch.index + testMatch[0].length - this.cropMatchString(testMatch[0]).length;
                     matches.push({
                         type: 'test',
                         module: moduleInfo.name,
-                        name: name.replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, ''),
+                        name: testInfo.name,
                         index: realIndex
                     });
                 }
@@ -178,15 +187,33 @@ class TestParser {
                     }
                 }
             } else {
-                return new TestInfo('module', moduleInfo.name, "");
+                return new TestInfo('module', moduleInfo.name, '');
             }
 
             if(lastOneTest) {
-                return new TestInfo(lastOneTest.type, lastOneTest.module, lastOneTest.name);
+                return new TestInfo(
+                    lastOneTest.type,
+                    lastOneTest.module,
+                    lastOneTest.name);
             }
         }
 
-        return new TestInfo("", "", "");
+        return new TestInfo('', '', '');
+    }
+
+    private prepareTestInfo(testName: string, moduleName: string): TestInfo {
+        const CLEANUP_TEST_OR_FIXTURE_NAME_RE = /(^\(?\s*(\'|"|`))|((\'|"|`|[$]\{)\s*\)?$)/g;
+        const CLEANUP_ESCAPE_RE = /\\('|"|`{1})/g;
+        const INTERPOLATION_RE = /(.*\${)|.*/g;
+
+        const match = testName.match(INTERPOLATION_RE);
+        const hasInterpolation = !!match[1];
+
+        let name = hasInterpolation ? match[1] : match[0];
+        name = name.replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '')
+                    .replace(CLEANUP_ESCAPE_RE, '$1');
+
+        return new TestInfo('test', moduleName, name, hasInterpolation);
     }
 
     normalizeFilePath(filePath: string): string {

@@ -2,11 +2,13 @@ export class TestInfo {
     type: string;
     module: string;
     name: string;
+    hasInterpolation: boolean;
 
-    constructor(type: string, module: string, name: string) {
+    constructor(type: string, module: string, name: string, hasInterpolation = false) {
         this.type = type;
         this.module = module;
         this.name = name;
+        this.hasInterpolation = hasInterpolation;
     }
 }
 
@@ -27,6 +29,6 @@ export const BrowserInfos = {
     ie: new BrowserInfo("ie")
 };
 
-export const TestInfoFile = new TestInfo('file', "", "");
+export const TestInfoFile = new TestInfo('file', '', '');
 
 export const BROWSER_ALIASES = ['ie', 'firefox', 'chrome', 'chrome-canary', 'chromium', 'opera', 'safari', 'edge'];
