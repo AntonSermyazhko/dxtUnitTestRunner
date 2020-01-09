@@ -98,7 +98,8 @@ class TestRunner {
             const relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/');
             let testUrl = `http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true`;
             if(testInfo.type === "module") {
-                testUrl = `${testUrl}&module=${testInfo.module}`;
+                const moduleId = QUnitHelper.generateQunitTestHash(testInfo.module);
+                testUrl = `${testUrl}&moduleId=${moduleId}`;
             } else if(testInfo.type === "test") {
                 if(testInfo.hasInterpolation) {
                     testUrl = `${testUrl}&module=${testInfo.module}&filter=${testInfo.name}`;

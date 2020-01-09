@@ -1,6 +1,6 @@
 export default class QUnitHelper {
     // Copied from QUnit
-    static generateQunitTestHash(module, testName) {
+    static generateQunitTestHash(module, testName = undefined) {
         var str = module + "\x1C" + testName;
         var hash = 0;
 
