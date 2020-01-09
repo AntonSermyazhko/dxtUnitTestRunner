@@ -98,15 +98,17 @@ class TestRunner {
             const relativeFilePath = relativeFilePathMatch[1].replace(/\\/g, '/');
             let testUrl = `http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true`;
             if(testInfo.type === "module") {
-                testUrl = encodeURI(`${testUrl}&module=${testInfo.module}`);
+                testUrl = `${testUrl}&module=${testInfo.module}`;
             } else if(testInfo.type === "test") {
                 if(testInfo.hasInterpolation) {
-                    testUrl = encodeURI(`${testUrl}&module=${testInfo.module}&filter=${testInfo.name}`);
+                    testUrl = `${testUrl}&module=${testInfo.module}&filter=${testInfo.name}`;
                 } else {
-                    let testId = QUnitHelper.generateQunitTestHash(testInfo.module, testInfo.name);
-                    testUrl = encodeURI(`${testUrl}&testId=${testId}`);
+                    const testId = QUnitHelper.generateQunitTestHash(testInfo.module, testInfo.name);
+                    testUrl = `${testUrl}&testId=${testId}`;
                 }
             }
+
+            testUrl = encodeURI(testUrl);
 
             if(isWin32) {
                 testUrl = testUrl.replace(/&/g, '^&');
