@@ -23,3 +23,7 @@
 1. Support MacOS
 2. Running tests from "[...].forEach" construction
 3. Fix some bugs in regular expressions
+
+# 1.2.2 (2020-01-09)
+1. Fix encoding of the running test URL
+2. Running test module by moduleId instead of the moduleName
