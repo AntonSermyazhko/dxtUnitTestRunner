@@ -157,11 +157,11 @@ class TestRunner {
 class TestParser {
     findTest(textBeforeSelection: string, textLine: string, cursorPosition: number): TestInfo {
         const QUNIT_TEST_RE = /(^|;|\s+|\/\/|\/\*|QUnit\.)(test\w*)\s*(?:\.[a-zA-Z]+\([^\)]*\))*\s*\(\s*('|"|`)(.+?\s*(?:[^\\]\3))\s*,/gm;
+        const matches = new Array<TestInfo>();
+        const moduleInfo = this.findModule(textBeforeSelection);
 
-        var testMatch = QUNIT_TEST_RE.exec(textLine),
-            matches = [],
-            moduleInfo = this.findModule(textBeforeSelection),
-            lastOneTest = null;
+        let testMatch = QUNIT_TEST_RE.exec(textLine);
+        let lastOneTest = null;
 
         if(testMatch) {
             return this.prepareTestInfo(testMatch[4], moduleInfo.name);
@@ -169,14 +169,10 @@ class TestParser {
             testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
             while(testMatch !== null) {
                 if(this.isTest(testMatch[0]) && testMatch.index > moduleInfo.index) {
-                    const testInfo = this.prepareTestInfo(testMatch[4], moduleInfo.name);
                     const realIndex = testMatch.index + testMatch[0].length - this.cropMatchString(testMatch[0]).length;
-                    matches.push({
-                        type: 'test',
-                        module: moduleInfo.name,
-                        name: testInfo.name,
-                        index: realIndex
-                    });
+                    const testInfo = this.prepareTestInfo(testMatch[4], moduleInfo.name);
+                    testInfo.nameIndex = realIndex;
+                    matches.push(testInfo);
                 }
 
                 testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
@@ -184,7 +180,7 @@ class TestParser {
 
             if(matches.length) {
                 for(var i = matches.length - 1; i >= 0; i--){
-                    if(cursorPosition >=  matches[i].index){
+                    if(cursorPosition >=  matches[i].nameIndex){
                         lastOneTest = matches[i];
                         break;
                     }
@@ -193,12 +189,7 @@ class TestParser {
                 return new TestInfo('module', moduleInfo.name, '');
             }
 
-            if(lastOneTest) {
-                return new TestInfo(
-                    lastOneTest.type,
-                    lastOneTest.module,
-                    lastOneTest.name);
-            }
+            return lastOneTest
         }
 
         return new TestInfo('', '', '');
@@ -207,8 +198,7 @@ class TestParser {
     private prepareTestInfo(testName: string, moduleName: string): TestInfo {
         const CLEANUP_TEST_OR_FIXTURE_NAME_RE = /(^\(?\s*(\'|"|`))|((\'|"|`|[$]\{)\s*\)?$)/g;
         const CLEANUP_ESCAPE_RE = /\\('|"|`{1})/g;
-        const INTERPOLATION_RE = /(.*\${)|.*/g;
-
+        const INTERPOLATION_RE = /(.*?\${)|.*/;
         const match = testName.match(INTERPOLATION_RE);
         const hasInterpolation = !!match[1];
 

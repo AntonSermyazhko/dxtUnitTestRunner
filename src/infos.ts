@@ -3,6 +3,7 @@ export class TestInfo {
     module: string;
     name: string;
     hasInterpolation: boolean;
+    nameIndex: number;
 
     constructor(type: string, module: string, name: string, hasInterpolation = false) {
         this.type = type;

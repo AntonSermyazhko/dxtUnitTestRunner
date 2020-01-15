@@ -27,3 +27,6 @@
 # 1.2.2 (2020-01-09)
 1. Fix encoding of the running test URL
 2. Running test module by moduleId instead of the moduleName
+
+# 1.2.3 (2020-01-14)
+1. Fix runinng test with interpolated name
