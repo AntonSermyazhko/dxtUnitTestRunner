@@ -30,3 +30,7 @@
 
 # 1.2.3 (2020-01-14)
 1. Fix runinng test with interpolated name
+
+# 1.2.4 (2020-01-21)
+1. Fix running test when module name has interpolation
+2. Fix parsing module name with apostrophe parentheses
