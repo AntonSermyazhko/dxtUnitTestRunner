@@ -3,7 +3,7 @@ import * as vscode from 'vscode';
 import * as fs from 'fs';
 import * as isReachable from 'is-reachable';
 import * as browserTools from 'testcafe-browser-tools';
-import { BrowserInfo, TestInfo } from '../infos';
+import { BrowserInfo, TestInfo, QUnitName } from '../infos';
 import QUnitHelper from './qUnitHelper';
 
 export default class QUnitTestController {
@@ -165,48 +165,58 @@ class TestParser {
 
         if(testMatch) {
             return this.prepareTestInfo(testMatch[4], moduleInfo.name);
-        } else {
-            testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
-            while(testMatch !== null) {
-                if(this.isTest(testMatch[0]) && testMatch.index > moduleInfo.index) {
-                    const realIndex = testMatch.index + testMatch[0].length - this.cropMatchString(testMatch[0]).length;
-                    const testInfo = this.prepareTestInfo(testMatch[4], moduleInfo.name);
-                    testInfo.nameIndex = realIndex;
-                    matches.push(testInfo);
-                }
-
-                testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
-            }
-
-            if(matches.length) {
-                for(var i = matches.length - 1; i >= 0; i--){
-                    if(cursorPosition >=  matches[i].nameIndex){
-                        lastOneTest = matches[i];
-                        break;
-                    }
-                }
-            } else {
-                return new TestInfo('module', moduleInfo.name, '');
-            }
-
-            return lastOneTest
         }
 
-        return new TestInfo('', '', '');
+        testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
+        while(testMatch !== null) {
+            if(this.isTest(testMatch[0]) && testMatch.index > moduleInfo.index) {
+                const realIndex = testMatch.index + testMatch[0].length - this.cropMatchString(testMatch[0]).length;
+                const testInfo = this.prepareTestInfo(testMatch[4], moduleInfo.name);
+                testInfo.nameIndex = realIndex;
+                matches.push(testInfo);
+            }
+
+            testMatch = QUNIT_TEST_RE.exec(textBeforeSelection);
+        }
+
+        if(matches.length) {
+            for(var i = matches.length - 1; i >= 0; i--){
+                if(cursorPosition >=  matches[i].nameIndex){
+                    lastOneTest = matches[i];
+                    break;
+                }
+            }
+        } else {
+            return new TestInfo('module', moduleInfo.name, '');
+        }
+
+        return lastOneTest
     }
 
-    private prepareTestInfo(testName: string, moduleName: string): TestInfo {
+    private prepareTestInfo(testName: string, rawModuleName: string): TestInfo {
+        const normalTestName = this.normalizeRawName(testName);
+        const normalModuleName = this.normalizeRawName(rawModuleName);
+
+        return {
+            type: 'test',
+            module: normalModuleName.name,
+            name: normalTestName.name,
+            hasInterpolation: normalTestName.hasInterpolation || normalModuleName.hasInterpolation,
+            nameIndex: -1
+        };
+    }
+    private normalizeRawName(rawName: string) : QUnitName {
         const CLEANUP_TEST_OR_FIXTURE_NAME_RE = /(^\(?\s*(\'|"|`))|((\'|"|`|[$]\{)\s*\)?$)/g;
         const CLEANUP_ESCAPE_RE = /\\('|"|`{1})/g;
         const INTERPOLATION_RE = /(.*?\${)|.*/;
-        const match = testName.match(INTERPOLATION_RE);
-        const hasInterpolation = !!match[1];
+        const matchInterpolation = rawName.match(INTERPOLATION_RE);
+        const hasInterpolation = !!matchInterpolation[1];
 
-        let name = hasInterpolation ? match[1] : match[0];
+        let name = hasInterpolation ? matchInterpolation[1] : matchInterpolation[0];
         name = name.replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '')
                     .replace(CLEANUP_ESCAPE_RE, '$1');
 
-        return new TestInfo('test', moduleName, name, hasInterpolation);
+        return { name, hasInterpolation };
     }
 
     normalizeFilePath(filePath: string): string {
@@ -237,7 +247,7 @@ class TestParser {
     }
 
     private findModule(textBeforeSelection: string) {
-        const QUNIT_MODULE_RE = /(^|;|\s+|\/\/|\/\*|QUnit\.)module\s*\(\s*('|")(.+?\s*)('|")\s*(,|\)|\n)/gm;
+        const QUNIT_MODULE_RE = /(^|;|\s+|\/\/|\/\*|QUnit\.)module\s*\(\s*(`|'|")(.+?\s*)(`|'|")\s*(,|\)|\n)/gm;
         var moduleMatch = QUNIT_MODULE_RE.exec(textBeforeSelection),
             index = -1,
             moduleName = "";

@@ -13,6 +13,11 @@ export class TestInfo {
     }
 }
 
+export class QUnitName {
+    name = '';
+    hasInterpolation = false;
+}
+
 export class BrowserInfo {
     name: string;
     cmdArgs: string;
