@@ -34,3 +34,6 @@
 # 1.2.4 (2020-01-21)
 1. Fix running test when module name has interpolation
 2. Fix parsing module name with apostrophe parentheses
+
+# 1.2.5 (2020-02-06)
+1. Change keywords (package.json) for VS Code marketplace
