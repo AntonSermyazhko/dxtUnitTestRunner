@@ -37,3 +37,6 @@
 
 # 1.2.5 (2020-02-06)
 1. Change keywords (package.json) for VS Code marketplace
+
+# 1.2.6 (2020-10-27)
+1. Using the 'filter' query string parameter instead of the 'testId' one due to the hierarchical modules.
