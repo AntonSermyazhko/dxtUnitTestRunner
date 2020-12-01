@@ -40,3 +40,7 @@
 
 # 1.2.6 (2020-10-27)
 1. Using the 'filter' query string parameter instead of the 'testId' one due to the hierarchical modules.
+
+# 1.2.7 (2020-12-01)
+1. Using the 'modulename' query string parameter instead of the 'moduleId' one due to the hierarchical modules.
+2. Update packages.

@@ -99,8 +99,7 @@ class TestRunner {
             let testUrl = `http://localhost:${qunitPort}/run/${relativeFilePath}?notimers=true&nojquery=true`;
 
             if(testInfo.type === "module") {
-                const moduleId = QUnitHelper.generateQunitTestHash(testInfo.module);
-                testUrl = `${testUrl}&moduleId=${moduleId}`;
+                testUrl = `${testUrl}&modulename=${testInfo.module}`;
             } else if(testInfo.type === "test") {
                 testUrl = `${testUrl}&filter=${testInfo.name}`;
             }
@@ -208,7 +207,10 @@ class TestParser {
         const matchInterpolation = rawName.match(INTERPOLATION_RE);
         const hasInterpolation = !!matchInterpolation[1];
 
-        let name = hasInterpolation ? matchInterpolation[1] : matchInterpolation[0];
+        let name = hasInterpolation
+            ? matchInterpolation[1]
+            : matchInterpolation[0];
+
         name = name.replace(CLEANUP_TEST_OR_FIXTURE_NAME_RE, '')
                     .replace(CLEANUP_ESCAPE_RE, '$1');
 
