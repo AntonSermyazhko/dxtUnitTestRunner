@@ -109,7 +109,7 @@ class TestRunner {
             if(isWin32) {
                 testUrl = testUrl.replace(/&/g, '^&');
             } else {
-                testUrl = `'${testUrl}'`;
+                testUrl = `"${testUrl}"`;
             }
 
             browserTools.getBrowserInfo(browserInfo.name).then((info: any) => {

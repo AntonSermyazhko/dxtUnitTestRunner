@@ -43,4 +43,7 @@
 
 # 1.2.7 (2020-12-01)
 1. Using the 'modulename' query string parameter instead of the 'moduleId' one due to the hierarchical modules.
-2. Update packages.
+2. Update package.
+
+# 1.2.8 (2020-12-07)
+1. Fix test filter GET parameter for MacOS.
