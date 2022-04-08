@@ -1,3 +1,7 @@
+import * as vscode from 'vscode';
+import { Terminal } from "vscode";
+import { getRootPath } from "./pathHelper";
+
 export default class QUnitHelper {
     // Copied from QUnit
     static generateQunitTestHash(module, testName = undefined) {
@@ -16,4 +20,29 @@ export default class QUnitHelper {
 
         return hex.slice(-8);
     }
+}
+
+export const createTestingTerminal = (
+    filePath: string,
+    terminalName: string,
+    callback: (terminal: Terminal) => void,
+    isShow = false,
+    isDispose = false,
+): Terminal => {
+    var terminal = vscode.window.createTerminal(`QUnit test runner - ${terminalName}`);
+
+    if(isShow) {
+        terminal.show();
+    }
+
+    const rootPath = getRootPath(filePath);
+    terminal.sendText(`cd ${rootPath}testing/`);
+
+    callback(terminal);
+
+    if(isDispose) {
+        terminal.dispose();
+    }
+
+    return terminal;
 }

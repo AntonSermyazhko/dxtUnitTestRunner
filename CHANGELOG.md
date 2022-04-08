@@ -47,3 +47,6 @@
 
 # 1.2.8 (2020-12-07)
 1. Fix test filter GET parameter for MacOS.
+
+# 1.2.9 (2022-04-08)
+1. Refactoring

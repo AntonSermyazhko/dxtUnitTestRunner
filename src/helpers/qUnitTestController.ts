@@ -4,7 +4,8 @@ import * as fs from 'fs';
 import * as isReachable from 'is-reachable';
 import * as browserTools from 'testcafe-browser-tools';
 import { BrowserInfo, TestInfo, QUnitName } from '../infos';
-import QUnitHelper from './qUnitHelper';
+import QUnitHelper, { createTestingTerminal } from './qUnitHelper';
+import { getRootPath } from './pathHelper';
 
 export default class QUnitTestController {
     parser = new TestParser();
@@ -41,30 +42,26 @@ export default class QUnitTestController {
             return;
         }
 
-        const rootPathMatch = /.+?(?=testing)/.exec(filePath);
-        if(!rootPathMatch) {
-            vscode.window.showErrorMessage(`Test runner: Error parse test file root path`);
-            return;
+        const rootPath = getRootPath(filePath);
+        if(rootPath) {
+            fs.readFile(`${rootPath}/ports.json`, "utf8", (err, data) => {
+                if(err) {
+                    vscode.window.showErrorMessage(`Test runner: Error read 'ports.json'`);
+                    return;
+                }
+
+                if(testInfo.type === "test") {
+                    console.log(`Running test: module=${testInfo.module}, test=${testInfo.name}`);
+                } else if(testInfo.type === "module") {
+                    console.log(`Running tests: module=${testInfo.module}`);
+                } else if(testInfo.type === "file") {
+                    console.log(`Running tests: file=${filePath}`);
+                }
+
+                const ports = JSON.parse(data);
+                this.runner.runTest(browserInfo, filePath, testInfo, ports.qunit);
+            });
         }
-
-        const rootPath = rootPathMatch[0].replace(/\\/g, '/');
-        fs.readFile(`${rootPath}/ports.json`, "utf8", (err, data) => {
-            if(err) {
-                vscode.window.showErrorMessage(`Test runner: Error read 'ports.json'`);
-                return;
-            }
-
-            if(testInfo.type === "test") {
-                console.log(`Running test: module=${testInfo.module}, test=${testInfo.name}`);
-            } else if(testInfo.type === "module") {
-                console.log(`Running tests: module=${testInfo.module}`);
-            } else if(testInfo.type === "file") {
-                console.log(`Running tests: file=${filePath}`);
-            }
-
-            const ports = JSON.parse(data);
-            this.runner.runTest(browserInfo, filePath, testInfo, ports.qunit);
-        });
     }
 
     dispose() {
@@ -112,6 +109,8 @@ class TestRunner {
                 testUrl = `"${testUrl}"`;
             }
 
+            this.prepareTestingEnv(filePath);
+
             browserTools.getBrowserInfo(browserInfo.name).then((info: any) => {
                 if(browserInfo.cmdArgs) {
                     info.cmd += ` ${browserInfo.cmdArgs}`;
@@ -124,7 +123,7 @@ class TestRunner {
     }
 
     private restartQUnitTestService(qunitUrl: string, browserInfo: BrowserInfo, qunitPort: number, filePath: string, testInfo: TestInfo) {
-        if(this.runQUnitTestService()) {
+        if(this.runQUnitTestService(filePath)) {
             isReachable(qunitUrl, { timeout: 20000 }).then(result => {
                 if(!result) {
                     vscode.window.showWarningMessage('Test runner: Error start testing service');
@@ -136,16 +135,35 @@ class TestRunner {
         }
     }
 
-    private runQUnitTestService(): boolean {
-        var terminal = vscode.window.createTerminal("qunit test runner");
-        if(terminal) {
-            terminal.show(true);
-            terminal.sendText("cd ./testing");
-            terminal.sendText("node launch");
-            return true;
+    private runQUnitTestService(filePath: string): boolean {
+        let result = false;
+        createTestingTerminal(
+            filePath,
+            "testing service",
+            (terminal) => {
+                terminal.sendText("node launch");
+                result = true;
+            },
+            true
+        );
+
+        if(!result) {
+            vscode.window.showErrorMessage(`Test runner: Error run QUnit test service`);
         }
-        vscode.window.showErrorMessage(`Test runner: Error run QUnit test service`);
-        return false;
+
+        return result;
+    }
+
+    private prepareTestingEnv(filePath: string): void {
+        createTestingTerminal(
+            filePath,
+            "prepare env",
+            (terminal) => {
+                terminal.sendText("rm -f -v LastSuiteTime.txt CompletedSuites.txt");
+            },
+            false,
+            true
+        );
     }
 }
 
